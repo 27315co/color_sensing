@@ -1,0 +1,107 @@
+#include<stdio.h>
+#include<wiringPi.h>
+
+
+#define S2 4
+#define S3 5
+#define DATA_IN 6
+
+int frequency_start = 0;
+
+int color_Hz = 0;
+
+int period_sum = 0;
+
+int abr[10] = { 0 };
+
+int red, green, blue = 0;
+
+int colorcheck_flag = 0;
+
+
+void check_color(int a, int b)
+{
+	digitalWrite(S2, a);
+	digitalWrite(S3, b);
+	delay(300);
+
+	for (int i = 0; i < 10; i++)
+	{
+		frequency_start = micros();
+		while (digitalRead(DATA_IN) == HIGH);
+
+		while (digitalRead(DATA_IN) == LOW);
+
+		while (digitalRead(DATA_IN) == HIGH);
+		color_Hz = micros() - frequency_start;
+
+		abr[i] = color_Hz;
+
+		period_sum += abr[i];
+	}
+}
+
+void determine_color()
+{
+	if (red >= 45 && red <= 55) colorcheck_flag++;
+	if (blue >= 15 && blue <= 20) colorcheck_flag++;
+	if (green >= 30 && green <= 38) colorcheck_flag++;
+
+	//printf("%d %d %d", red, blue, green);
+
+	if (colorcheck_flag == 3) printf("blue\n");
+
+	colorcheck_flag = 0;
+
+	if (red >= 7 && red <= 12) colorcheck_flag++;
+	if (blue >= 30 && blue <= 37) colorcheck_flag++;
+	if (green >= 41 && green <= 49) colorcheck_flag++;
+
+	if (colorcheck_flag == 3) printf("red\n");
+
+	colorcheck_flag = 0;
+
+	if (red >= 7 && red <= 12) colorcheck_flag++;
+	if (blue >= 20 && blue <= 27) colorcheck_flag++;
+	if (green >= 12 && green <= 18) colorcheck_flag++;
+
+	if (colorcheck_flag == 3) printf("yellow\n");
+
+	colorcheck_flag = 0;
+}
+
+int main(void)
+{
+
+	if (wiringPiSetup() == -1) return 1;
+
+	pinMode(S2, OUTPUT);
+	pinMode(S3, OUTPUT);
+	pinMode(DATA_IN, INPUT);
+
+
+
+
+
+	while (1)
+	{
+     
+		check_color(0, 0);
+        red = (period_sum / 10);
+		period_sum = 0;
+	//	printf(" red average : %d \n", (sum / 10));
+		check_color(0, 1);
+		blue = (period_sum / 10);
+		period_sum = 0;
+
+	//	printf(" blue average : %d \n", (sum / 10));
+		check_color(1, 1);
+		green = (period_sum /10);
+		period_sum = 0;
+   //	printf(" green average : %d \n", (sum / 10));
+
+		determine_color();
+	}
+
+
+}
